@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Puzzle War V19.2 - Final Boss</title>
+    <style>
+        * { touch-action: manipulation; -webkit-user-select: none; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle, #1e272e, #000); color: white; text-align: center; margin: 0; padding: 5px; overflow-x: hidden; }
+        
+        /* Stats Bar */
+        .stats { background: linear-gradient(135deg, #1e8449, #2ecc71); padding: 10px; font-size: 13px; display: flex; justify-content: space-around; margin-bottom: 5px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-weight: bold; }
+        
+        /* Level Bar */
+        .level-bar-bg { width: 95%; height: 12px; background: #333; margin: 8px auto; border-radius: 10px; overflow: hidden; border: 1px solid #555; }
+        #level-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #f1c40f, #f39c12); transition: 0.5s; }
+        
+        /* Containers */
+        .box { background: rgba(0,0,0,0.7); padding: 12px; border-radius: 15px; margin: 8px 0; border: 1px solid #444; position: relative; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .card { background: #2c3e50; padding: 8px; border-radius: 10px; border: 1px solid #3498db; font-size: 11px; }
+        
+        /* Board */
+        #board { margin: 0 auto; border-spacing: 5px; }
+        .tile { width: 72px; height: 72px; border-radius: 15px; border: 3px solid rgba(255,255,255,0.1); font-size: 30px; transition: 0.2s; outline: none; box-shadow: 0 4px 0 #111; }
+        .color-0 { background: linear-gradient(135deg, #ff4d4d, #b30000); }
+        .color-1 { background: linear-gradient(135deg, #4d94ff, #0047b3); }
+        .color-2 { background: linear-gradient(135deg, #4dff88, #00b33c); }
+        .color-3 { background: linear-gradient(135deg, #ffff4d, #b3b300); }
+        
+        /* Buttons */
+        .btn { background: linear-gradient(to bottom, #e67e22, #d35400); color: white; border: none; padding: 12px; border-radius: 8px; width: 95%; font-weight: bold; margin: 4px 0; cursor: pointer; box-shadow: 0 4px 0 #a04000; font-size: 14px; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #a04000; }
+        .locked { background: #34495e !important; color: #7f8c8d !important; opacity: 0.8; pointer-events: none; box-shadow: none !important; }
+        
+        /* Effects */
+        .buff-active { color: #f1c40f; font-weight: bold; animation: pulse 0.8s infinite; text-shadow: 0 0 5px #000; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .shake { animation: shake 0.2s; }
+        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(6px,6px); } 50% { transform: translate(-6px,-6px); } }
+        .hidden { display: none; }
+        .selected { transform: scale(1.1); border-color: white !important; box-shadow: 0 0 20px white; z-index: 5; position: relative; }
+        
+        hr { border: 0; border-top: 1px solid #444; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div id="menu">
+    <h2 style="color: #f1c40f; margin: 10px; text-shadow: 2px 2px #000;">⚔️ PUZZLE WAR ⚔️</h2>
+    
+    <div class="stats">
+        <span>💰 <span id="m-coins">0</span></span>
+        <span>⭐ LV: <span id="m-lvl">1</span></span>
+        <span>⚔️ <span id="m-dmg">10</span></span>
+    </div>
+    
+    <div class="level-bar-bg"><div id="level-bar-fill"></div></div>
+
+    <div class="box" style="border-color: #f1c40f; background: rgba(241, 196, 15, 0.1);">
+        <b style="color: #f1c40f;">📜 NHIỆM VỤ TUẦN HOÀN</b>
+        <div id="quest-list" style="font-size: 12px; margin-top: 5px; text-align: left; padding-left: 10px; line-height: 1.6;"></div>
+    </div>
+
+    <div class="box">
+        <b style="color: #2ecc71;">🔨 LÒ RÈN VŨ KHÍ</b><br>
+        <button class="btn" style="background: #27ae60;" onclick="upgradeWeapon()">NÂNG CẤP DMG (<span id="up-cost">150</span> Xu)</button>
+    </div>
+
+    <div class="box">
+        <b style="color: #3498db;">🛒 CỬA HÀNG BUFF</b>
+        <div class="grid">
+            <div class="card">Khiên Cơ Bản (Chặn 1)<br><button class="btn" style="padding:5px; font-size:10px" onclick="buyBuff('shield1', 400)">400 Xu</button></div>
+            <div class="card">Pháo Hoa (+10% DMG)<br><button class="btn" style="padding:5px; font-size:10px" onclick="buyBuff('cannon1', 1000)">1K Xu</button></div>
+        </div>
+        <div class="grid" style="margin-top:5px">
+            <button class="btn" style="background:#c0392b; font-size:10px" onclick="buyBuff('shield3', 8000)">🛡️ KHIÊN THÁNH (8K)</button>
+            <button class="btn" style="background:#2980b9; font-size:10px" onclick="buyBuff('cannon3', 25000)">🚀 SIÊU PHÁO (25K)</button>
+        </div>
+    </div>
+
+    <button class="btn" style="background:#8e44ad" onclick="startInf()">♾️ MAP VÔ TẬN (10K XU)</button>
+    
+    <div class="grid" style="margin-top:5px">
+        <button class="btn" style="background:#2e86c1" onclick="checkStart(1, 100, 1, 1)">MAP 1</button>
+        <button id="btn-map2" class="btn" onclick="checkStart(2, 600, 4, 5)"></button>
+        <button id="btn-map3" class="btn" onclick="checkStart(3, 3500, 12, 25)"></button>
+        <button id="btn-map4" class="btn" onclick="checkStart(4, 25000, 60, 100)"></button>
+    </div>
+    
+    <button onclick="resetData()" style="font-size:10px; opacity:0.3; margin-top:15px; background:none; color:white; border:none;">XÓA DỮ LIỆU</button>
+</div>
+
+<div id="game" class="hidden">
+    <div class="stats">
+        <span>❤️ HP: <span id="p-hp">10</span></span>
+        <span>⚔️ DMG: <span id="p-dmg-live">10</span></span>
+    </div>
+    <div id="buff-status" style="font-size: 11px; min-height: 20px;"></div>
+    
+    <div id="enemy-area" class="box" style="background: linear-gradient(to bottom, #943126, #641e16); margin-bottom:10px; border: 2px solid #f1c40f;">
+        <b id="e-name">BOSS</b>: <span id="e-hp">100</span> HP
+    </div>
+    
+    <div id="shake-target"><table id="board"></table></div>
+    
+    <div class="box" style="padding:10px; margin-top:10px">
+        <div class="grid">
+            <button class="btn" style="background:#2980b9" onclick="buyBuff('shield1', 400)">🛡️ MUA KHIÊN</button>
+            <button class="btn" style="background:#555" onclick="goHome()">🏠 THOÁT</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- ÂM THANH ---
+    let audioCtx;
+    function initAudio() { 
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+        if(audioCtx.state==='suspended') audioCtx.resume(); 
+    }
+    function playSnd(f, t, d, g=0.1) {
+        if(!audioCtx) return; const o = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime); o.connect(gain); gain.connect(audioCtx.destination);
+        gain.gain.setValueAtTime(g, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime + d);
+    }
+
+    // --- DỮ LIỆU GAME ---
+    let coins = parseInt(localStorage.getItem('v19_2_coins')) || 0;
+    let lvl = parseInt(localStorage.getItem('v19_2_lvl')) || 1;
+    let exp = parseFloat(localStorage.getItem('v19_2_exp')) || 0;
+    let baseDmg = parseInt(localStorage.getItem('v19_2_baseDmg')) || 10;
+    let infUnlocked = localStorage.getItem('v19_2_inf') === 'true';
+    let qMatch = parseInt(localStorage.getItem('v19_2_qMatch')) || 0;
+    let qBoss = parseInt(localStorage.getItem('v19_2_qBoss')) || 0;
+
+    let activeShield = 0, activeCannon = 0, godMode = false;
+    let hp, eHp, bossDmg, isInf = false, firstTile = null, targetHp;
+
+    function upgradeWeapon() {
+        initAudio(); let cost = baseDmg * 15;
+        if (coins >= cost) { 
+            coins -= cost; baseDmg += 5; 
+            playSnd(600, 'sine', 0.2); 
+            update(); 
+        } else alert("Bạn cần thêm Xu!");
+    }
+
+    function buyBuff(type, price) {
+        initAudio();
+        if (coins >= price) {
+            coins -= price; playSnd(500, 'triangle', 0.2);
+            if (type === 'shield1') activeShield = 1;
+            if (type === 'shield3') { godMode = true; setTimeout(()=> {godMode=false; update();}, 5000); }
+            if (type === 'cannon1') activeCannon = 1;
+            if (type === 'cannon3') triggerGiant();
+            update();
+        } else alert("Không đủ Xu!");
+    }
+
+    function triggerGiant() {
+        let count = 0;
+        let iv = setInterval(() => {
+            eHp -= (baseDmg * 2.5); count++; 
+            playSnd(100+count*60, 'sawtooth', 0.1, 0.05); 
+            update();
+            if (count >= 10 || eHp <= 0) { 
+                clearInterval(iv); 
+                if(eHp <= 0 && !isInf) win(); 
+            }
+        }, 100);
+    }
+
+    function checkStart(m, bh, bd, req) {
+        initAudio(); if (lvl < req) return;
+        isInf = false; eHp = bh; targetHp = bh; bossDmg = bd; hp = 25 + (lvl * 3);
+        document.getElementById('menu').style.display='none';
+        document.getElementById('game').style.display='block';
+        document.getElementById('e-name').innerText = "BOSS MAP " + m;
+        createBoard(); update();
+    }
+
+    function startInf() {
+        initAudio();
+        if (!infUnlocked) { 
+            if (coins >= 10000) { coins -= 10000; infUnlocked = true; } 
+            else { alert("Map Vô Tận cần 10,000 Xu để mở khóa vĩnh viễn!"); return; } 
+        }
+        isInf = true; 
+        document.getElementById('menu').style.display='none'; 
+        document.getElementById('game').style.display='block';
+        document.getElementById('enemy-area').style.display='none'; 
+        createBoard(); update();
+    }
+
+    function createBoard() {
+        const b = document.getElementById('board'); b.innerHTML = '';
+        for(let r=0; r<4; r++) {
+            let row = b.insertRow();
+            for(let c=0; c<4; c++) {
+                let cell = row.insertCell();
+                let btn = document.createElement('button');
+                btn.className = 'tile'; resetTile(btn);
+                btn.onclick = () => clickTile(btn);
+                cell.appendChild(btn);
+            }
+        }
+    }
+
+    function clickTile(btn) {
+        playSnd(400, 'sine', 0.05);
+        if (!firstTile) { firstTile = btn; btn.classList.add('selected'); }
+        else {
+            if (firstTile !== btn && firstTile.getAttribute('data-type') === btn.getAttribute('data-type')) {
+                playSnd(250, 'square', 0.1); 
+                qMatch++; 
+                if (isInf) { 
+                    coins += 200; exp += 100; 
+                } else {
+                    let d = baseDmg; if (activeCannon === 1) d *= 1.15;
+                    eHp -= d;
+                    if (eHp <= 0) {
+                        win();
+                    } else {
+                        let tDmg = bossDmg;
+                        if (godMode) tDmg = 0;
+                        else if (activeShield === 1) { tDmg = 0; activeShield = 0; playSnd(800, 'sine', 0.2); }
+                        
+                        if (tDmg > 0) {
+                            hp -= tDmg; playSnd(100, 'triangle', 0.3);
+                            document.getElementById('shake-target').classList.add('shake');
+                            setTimeout(() => document.getElementById('shake-target').classList.remove('shake'), 200);
+                        }
+                        if (hp <= 0) { alert("Bạn đã bị Boss đánh bại!"); goHome(); }
+                    }
+                }
+                resetTile(firstTile); resetTile(btn);
+            }
+            if (firstTile) firstTile.classList.remove('selected');
+            firstTile = null; update();
+        }
+    }
+
+    function resetTile(t) {
+        const type = Math.floor(Math.random()*4);
+        t.setAttribute('data-type', type); t.className = 'tile color-' + type;
+        const icons = ['⚔️', '🛡️', '🔥', '⚡'];
+        t.innerText = icons[type];
+    }
+
+    function win() { 
+        qBoss++; playSnd(800, 'sine', 0.5);
+        coins += Math.floor(targetHp/2); exp += targetHp; 
+        alert("CHIẾN THẮNG! Nhận: " + Math.floor(targetHp/2) + " Xu"); 
+        goHome(); 
+    }
+
+    function update() {
+        // Lên cấp
+        while (exp >= lvl * lvl * 100) { 
+            exp -= lvl * lvl * 100; lvl++; 
+            playSnd(1000, 'sine', 0.4);
+            alert("CHÚC MỪNG! Bạn đã lên Cấp " + lvl);
+        }
+        
+        // --- NHIỆM VỤ TUẦN HOÀN ---
+        const goalM = 50, goalB = 5;
+        if (qMatch >= goalM) { 
+            coins += 500; qMatch -= goalM; 
+            playSnd(700, 'sine', 0.5); 
+            alert("NHIỆM VỤ XONG: +500 Xu (Ghép 50 khối)");
+        }
+        if (qBoss >= goalB) { 
+            coins += 2500; qBoss -= goalB; 
+            playSnd(700, 'sine', 0.5); 
+            alert("NHIỆM VỤ XONG: +2500 Xu (Diệt 5 Boss)");
+        }
+
+        // Hiển thị Menu
+        document.getElementById('m-coins').innerText = Math.floor(coins);
+        document.getElementById('m-lvl').innerText = lvl;
+        document.getElementById('m-dmg').innerText = baseDmg;
+        document.getElementById('up-cost').innerText = baseDmg * 15;
+        document.getElementById('level-bar-fill').style.width = (exp / (lvl*lvl*100) * 100) + "%";
+        document.getElementById('quest-list').innerHTML = 
+            `🎯 Ghép khối: <b>${qMatch}/${goalM}</b> (Thưởng 500)<br>` +
+            `👾 Diệt Boss: <b>${qBoss}/${goalB}</b> (Thưởng 2500)`;
+
+        // Hiển thị Game
+        document.getElementById('p-hp').innerText = hp ? hp.toFixed(0) : 0;
+        document.getElementById('e-hp').innerText = Math.max(0, Math.floor(eHp || 0));
+        document.getElementById('p-dmg-live').innerText = baseDmg;
+
+        // Khóa Map
+        updateLock('btn-map2', 2, 5); 
+        updateLock('btn-map3', 3, 25); 
+        updateLock('btn-map4', 4, 100);
+
+        // Buff Status
+        let bS = godMode ? "🛡️ TRẠNG THÁI BẤT TỬ! " : (activeShield ? "🛡️ Đang có Khiên " : "");
+        if(activeCannon) bS += "🚀 Pháo đã nạp đạn ";
+        document.getElementById('buff-status').innerHTML = `<span class="buff-active">${bS}</span>`;
+
+        // Lưu trữ
+        localStorage.setItem('v19_2_coins', coins); 
+        localStorage.setItem('v19_2_lvl', lvl);
+        localStorage.setItem('v19_2_exp', exp); 
+        localStorage.setItem('v19_2_baseDmg', baseDmg);
+        localStorage.setItem('v19_2_qMatch', qMatch); 
+        localStorage.setItem('v19_2_qBoss', qBoss);
+        localStorage.setItem('v19_2_inf', infUnlocked);
+    }
+
+    function updateLock(id, m, req) {
+        const b = document.getElementById(id);
+        if (lvl < req) { b.classList.add('locked'); b.innerHTML = "MAP "+m+"<br><small>Yêu cầu LV "+req+"</small>"; }
+        else { b.classList.remove('locked'); b.innerHTML = "MAP "+m+" (SẴN SÀNG)"; }
+    }
+
+    function goHome() { 
+        document.getElementById('menu').style.display='block'; 
+        document.getElementById('game').style.display='none'; 
+        update(); 
+    }
+    
+    function resetData() { if(confirm("Xóa toàn bộ tiến trình chơi?")) { localStorage.clear(); location.reload(); } }
+    
+    update();
+</script>
+</body>
+</html>
